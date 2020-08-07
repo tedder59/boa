@@ -10,7 +10,10 @@ template <typename T>
 class Array
 {
 public:
-    Array(size_t size) : m_nCapacity(size), m_nSize(0) {
+    Array(size_t size)
+        : m_nCapacity(size)
+        , m_nSize(0)
+    {
         m_pElem = new T[size];
     }
 
@@ -33,17 +36,16 @@ public:
 
         delete[] m_pElem;
         m_pElem = new_arr;
-
         m_nCapacity = m_nSize = new_size;
     }
 
-    T& operator[](size_t idx) {
-        // assert(idx < m_nSize);
+    T& operator[](size_t idx)
+    {
         return m_pElem[idx];
     }
 
-    const T& operator[](size_t idx) const {
-        // assert(idx < m_nSize);
+    const T& operator[](size_t idx) const
+    {
         return m_pElem[idx];
     }
 
@@ -85,47 +87,35 @@ public:
 
     void insert(const T& elem) {
         assert((m_array.m_nSize + 1) <= m_array.m_nCapacity);
-        long right = m_array.size();
-        if (right > 0)
-        {
-            right = bsearch(0, right - 1, elem);
-            right = abs(right);
+        long idx = bsearch_least_large_equal(elem);
 
-            if (right < m_array.m_nSize && m_array[right] < elem)
-            {
-                ++right;
-            }
-            
-            size_t start = m_array.m_nSize;
-            while(start > right)
-            {
-                m_array[start] = m_array[start - 1];
-                --start;
-            }
+        if (idx == -1)
+        {
+            m_array[m_array.m_nSize++] = elem;
+            return;
+        }
+
+        if (m_array[idx] == elem) ++idx;
+
+        size_t start = m_array.m_nSize;
+        while(start > idx)
+        {
+            m_array[start] = m_array[start - 1];
+            --start;
         }
        
-        m_array[right] = elem;
+        m_array[idx] = elem;
         ++m_array.m_nSize;
     }
 
     void erease(const T& elem) {
         if (m_array.m_nSize <= 0) return;
+        
+        long start = bsearch_least_equal(elem);
+        if (start < 0) return;
 
-        size_t right = m_array.m_nSize - 1;
-        long idx = bsearch(0, right, elem);
-        if (idx < 0) return;
-
-        size_t start = idx;
-        while (m_array[start - 1] == m_array[start])
-        {
-            --start;
-        }
-
-        size_t end = idx;
-        while (m_array[end + 1] == m_array[end])
-        {
-            ++end;
-        }
+        long end = bsearch_most_equal(elem);
+        if (end < 0) return;
         
         size_t offset = end - start + 1;
         m_array.m_nSize -= offset;
@@ -138,7 +128,7 @@ public:
     }
 
     void merge(const OrderedArray& other) {
-        size_t new_size = m_array.m_nSize + other.m_array.m_nSize;
+        size_t new_size = m_array.m_nSize + other.size();
         assert(new_size <= m_array.m_nCapacity);
         if (new_size <= 0) return;
 
@@ -183,17 +173,47 @@ public:
         m_array.m_nSize = new_size;
     }
 
-protected:
-    long bsearch(long left, long right, const T& elem) {
+    long bsearch_least_equal(const T& elem) {
+        size_t n = m_array.size();
+        if (n <= 0) return -1;
+
+        long left = 0;
+        long right = n - 1;
+
         while (left <= right )
         {
             long middle = left + ((right - left) >> 1);
 
-            if (m_array[middle] == elem)
+            if (m_array[middle] >= elem)
             {
-                return middle;
+                right = middle - 1;
             }
-            else if (m_array[middle] < elem)
+            else
+            {
+                left = middle + 1;
+            }
+        }
+
+        if (left >= 0 && m_array[left] == elem)
+        {
+            return left;
+        }
+        
+        return -1;
+    }
+
+    long bsearch_most_equal(const T& elem) {
+        size_t n = m_array.size();
+        if (n <= 0) return -1;
+
+        long left = 0;
+        long right = n - 1;
+
+        while (left <= right )
+        {
+            long middle = left + ((right - left) >> 1);
+
+            if (m_array[middle] <= elem)
             {
                 left = middle + 1;
             }
@@ -202,8 +222,71 @@ protected:
                 right = middle - 1;
             }
         }
+
+        if (right < n && m_array[right] == elem)
+        {
+            return right;
+        }
         
-        return -std::max(left, right);
+        return -1;
+    }
+
+    long bsearch_least_large_equal(const T& elem) {
+        size_t n = m_array.size();
+        if (n <= 0) return -1;
+
+        long left = 0;
+        long right = n - 1;
+
+        while (left <= right )
+        {
+            long middle = left + ((right - left) >> 1);
+
+            if (m_array[middle] <= elem)
+            {
+                left = middle + 1;
+            }
+            else
+            {
+                right = middle - 1;
+            }
+        }
+
+        if (left < n)
+        {
+            return left;
+        }
+        
+        return -1;
+    }
+
+    long bsearch_most_less_equal(const T& elem) {
+        size_t n = m_array.size();
+        if (n <= 0) return -1;
+
+        long left = 0;
+        long right = n - 1;
+
+        while (left <= right )
+        {
+            long middle = left + ((right - left) >> 1);
+
+            if (m_array[middle] >= elem)
+            {
+                right = middle - 1;
+            }
+            else
+            {
+                left = middle + 1;
+            }
+        }
+
+        if (right >= 0)
+        {
+            return right;
+        }
+        
+        return -1;
     }
 
 private:
