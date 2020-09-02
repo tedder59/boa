@@ -1,6 +1,10 @@
 #include "conv.h"
 #include <assert.h>
 #include <omp.h>
+#include <immintrin.h>
+#include <iostream>
+
+using namespace std;
 
 void DirectConv::operator()(
     int batch_size, int num_output, int in_channels,
@@ -184,21 +188,22 @@ void WinogradConv::operator()(
                     float* ptr_out = ptr_out_spatial + j * out_h * out_w;
                     
                     // hadamard
-                    for (int a = 0; a < spatial_size; a++)
-                    {
-                        m_buffer[a] = ptr_weight[a] * BTdTB[a];
-                    }
+                    // for (int a = 0; a < spatial_size; a++)
+                    // {
+                    //     m_buffer[a] = ptr_weight[a] * BTdTB[a];
+                    // }
+                    avx_hadamard(ptr_weight, BTdTB, m_buffer, spatial_size, in_channels);
 
-                    for (int ch = 1; ch < in_channels; ch++)
-                    {
-                        const float* ptr0 = ptr_weight + ch * spatial_size;
-                        const float* ptr1 = BTdTB + ch * spatial_size;
+                    // for (int ch = 1; ch < in_channels; ch++)
+                    // {
+                    //     const float* ptr0 = ptr_weight + ch * spatial_size;
+                    //     const float* ptr1 = BTdTB + ch * spatial_size;
 
-                        for (int a = 0; a < spatial_size; a++)
-                        {
-                            m_buffer[a] += ptr0[a] * ptr1[a];
-                        }
-                    }
+                    //     for (int a = 0; a < spatial_size; a++)
+                    //     {
+                    //         m_buffer[a] += ptr0[a] * ptr1[a];
+                    //     }
+                    // }
 
                     // AMTAT
                     output_transform(_aT.data(), m_buffer, temp);
@@ -337,6 +342,53 @@ void WinogradConv::matmul(int m, int n, int s,
             ptr[x] = val;
         }   
     }  
+}
+
+void WinogradConv::avx_hadamard(const float* a,
+                                const float* b,
+                                float* c,
+                                int length,
+                                int channel)
+{
+    // avx2
+    int nn = length >> 3;
+    int n = nn;
+    float* ptr = c;
+
+    while (n > 0)
+    {
+        __m256 m_a = _mm256_loadu_ps(a);
+        __m256 m_b = _mm256_loadu_ps(b);
+        __m256 m_c = _mm256_mul_ps(m_a, m_b);
+        _mm256_storeu_ps(ptr, m_c);
+
+        n--;
+        a += 8;
+        b += 8;
+        ptr += 8;
+    }
+
+    while (--channel)
+    {
+        n = nn;
+        ptr = c;
+
+        while (n > 0)
+        {
+            __m256 m_a = _mm256_loadu_ps(a);
+            __m256 m_b = _mm256_loadu_ps(b);
+            __m256 m_c = _mm256_loadu_ps(ptr);
+
+            m_a = _mm256_mul_ps(m_a, m_b);
+            m_c = _mm256_add_ps(m_c, m_a);
+            _mm256_storeu_ps(ptr, m_c);
+
+            n--;
+            a += 8;
+            b += 8;
+            ptr += 8;
+        }
+    }
 }
 
 bool WinogradTransformFactory::getTransform(

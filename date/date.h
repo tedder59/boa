@@ -13,7 +13,7 @@ public:
     int day() const;
     int dayOfWeek() const;
     int dayOfYear() const;
-    int weekNumber() const;
+    int weekOfYear() const;
 
     int daysTo(const Date&) const;
 

@@ -50,8 +50,11 @@ private:
                           const float* m,
                           float* output);
 
-    void matmul(int m, int n, int s, const float* a,
+    inline void matmul(int m, int n, int s, const float* a,
                 const float* b, float* c);
+
+    inline void avx_hadamard(const float* a, const float* b,
+                             float* c, int length, int channels);
 
 private:
     int     m_n, m_r, m_alpha;
