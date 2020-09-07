@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(boa CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -mavx2 -mfma")
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
 

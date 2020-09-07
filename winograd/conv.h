@@ -56,6 +56,9 @@ private:
     inline void avx_hadamard(const float* a, const float* b,
                              float* c, int length, int channels);
 
+    inline void avx_matmul_line(const float* a, const float* b,
+                                float* c, int length);
+
 private:
     int     m_n, m_r, m_alpha;
     std::vector<float>  _g;
@@ -73,5 +76,19 @@ public:
                              std::vector<float>& at,
                              std::vector<float>& bt);
 };
+
+void ncnn_conv3x3s1(
+    int h, int w, int inch,
+    int outw, int outh, int outch,
+    const float* bottom_blob,
+    float* top_blob,
+    const float* kernel);
+
+void conv3x3s1_winograd43_sse(
+    int w, int h, int inch,
+    int outw, int outh, int outch, 
+    const float* bottom_blob,
+    float* top_blob,
+    const float* kernel);
 
 #endif // BOA_WINOGRAD_CONV_H_
