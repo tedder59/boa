@@ -760,121 +760,6 @@ void conv3x3s1_winograd43_sse(
         }
     }
 
-    // 9 * outch/8 * inch * 32
-    float* kernel_tm2[9];
-    for (int r = 0; r < 9; r++)
-    {
-        float* kernel_tm_test = new float[4 * 8 * inch * (outch / 8 + (outch % 8) / 4 + outch % 4)];
-
-        int p = 0;
-        for (; p + 7 < outch; p += 8)
-        {
-            const float* kernel0 = kernel_tm + (p + 0) * inch * 36 + r * 4;
-            const float* kernel1 = kernel_tm + (p + 1) * inch * 36 + r * 4;
-            const float* kernel2 = kernel_tm + (p + 2) * inch * 36 + r * 4;
-            const float* kernel3 = kernel_tm + (p + 3) * inch * 36 + r * 4;
-            const float* kernel4 = kernel_tm + (p + 4) * inch * 36 + r * 4;
-            const float* kernel5 = kernel_tm + (p + 5) * inch * 36 + r * 4;
-            const float* kernel6 = kernel_tm + (p + 6) * inch * 36 + r * 4;
-            const float* kernel7 = kernel_tm + (p + 7) * inch * 36 + r * 4;
-
-            float* ktmp = kernel_tm_test + (p / 8) * inch * 32;
-            for (int q = 0; q < inch; q++)
-            {
-                __m128 t = _mm_loadu_ps(kernel0);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel1);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-                
-                t = _mm_loadu_ps(kernel2);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-                
-                t = _mm_loadu_ps(kernel3);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel4);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel5);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel6);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel7);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                kernel0 += 36;
-                kernel1 += 36;
-                kernel2 += 36;
-                kernel3 += 36;
-                kernel4 += 36;
-                kernel5 += 36;
-                kernel6 += 36;
-                kernel7 += 36;
-            }
-        }
-
-        for (; p + 3 < outch; p += 4)
-        {
-            const float* kernel0 = kernel_tm + (p + 0) * inch * 36 + r * 4;
-            const float* kernel1 = kernel_tm + (p + 1) * inch * 36 + r * 4;
-            const float* kernel2 = kernel_tm + (p + 2) * inch * 36 + r * 4;
-            const float* kernel3 = kernel_tm + (p + 3) * inch * 36 + r * 4;
-
-            float* ktmp = kernel_tm_test + (p / 8 + (p % 8) / 4) * inch * 32;
-
-            for (int q = 0; q < inch; q++)
-            {
-                __m128 t = _mm_loadu_ps(kernel0);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel1);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-                
-                t = _mm_loadu_ps(kernel2);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                t = _mm_loadu_ps(kernel3);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                kernel0 += 36;
-                kernel1 += 36;
-                kernel2 += 36;
-                kernel3 += 36;
-            }
-        }
-
-        for (; p < outch; p++)
-        {
-            const float* kernel0 = kernel_tm + p * inch * 36 + r * 4;
-            float* ktmp = kernel_tm_test + (p / 8 + (p % 8) / 4 + p % 4) * inch * 32;
-
-            for (int q = 0; q < inch; q++)
-            {
-                __m128 t = _mm_loadu_ps(kernel0);
-                _mm_storeu_ps(ktmp, t);
-                ktmp += 4;
-
-                kernel0 += 36;
-            }
-        }
-        kernel_tm2[r] = kernel_tm_test;
-    }
-
     // tiles
     const int colBlocks = outh / 4;
     const int rowBlocks = outw / 4;
@@ -922,15 +807,12 @@ void conv3x3s1_winograd43_sse(
 
                 for (int i = 0; i < rowBlocks; i++)
                 {
-                    float* out_tm0 = bottom_blob_tm + (tiles * 0 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm1 = bottom_blob_tm + (tiles * 1 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm2 = bottom_blob_tm + (tiles * 2 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm3 = bottom_blob_tm + (tiles * 3 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm4 = bottom_blob_tm + (tiles * 4 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm5 = bottom_blob_tm + (tiles * 5 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm6 = bottom_blob_tm + (tiles * 6 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm7 = bottom_blob_tm + (tiles * 7 + j * rowBlocks + i) * inch * 4 + q * 4;
-                    float* out_tm8 = bottom_blob_tm + (tiles * 8 + j * rowBlocks + i) * inch * 4 + q * 4;
+                    float* out_tm0 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 0;
+                    float* out_tm1 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 6;
+                    float* out_tm2 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 12;
+                    float* out_tm3 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 18;
+                    float* out_tm4 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 24;
+                    float* out_tm5 = bottom_blob_tm + ((j * rowBlocks + i) * inch + q) * 36 + 30;
 
                     __m256 _d0, _d1, _d2, _d3, _d4, _d5;
                     __m256 _w0, _w1, _w2, _w3, _w4, _w5;
@@ -1061,40 +943,43 @@ void conv3x3s1_winograd43_sse(
                     out_tm0[1] = output_n0[1];
                     out_tm0[2] = output_n0[2];
                     out_tm0[3] = output_n0[3];
-                    out_tm1[0] = output_n0[4];
-                    out_tm1[1] = output_n0[5];
-                    out_tm1[2] = output_n1[0];
-                    out_tm1[3] = output_n1[1];
-                    out_tm2[0] = output_n1[2];
-                    out_tm2[1] = output_n1[3];
-                    out_tm2[2] = output_n1[4];
-                    out_tm2[3] = output_n1[5];
+                    out_tm0[4] = output_n0[4];
+                    out_tm0[5] = output_n0[5];
 
-                    out_tm3[0] = output_n2[0];
-                    out_tm3[1] = output_n2[1];
-                    out_tm3[2] = output_n2[2];
-                    out_tm3[3] = output_n2[3];
-                    out_tm4[0] = output_n2[4];
-                    out_tm4[1] = output_n2[5];
-                    out_tm4[2] = output_n3[0];
-                    out_tm4[3] = output_n3[1];
-                    out_tm5[0] = output_n3[2];
-                    out_tm5[1] = output_n3[3];
-                    out_tm5[2] = output_n3[4];
-                    out_tm5[3] = output_n3[5];
+                    out_tm1[0] = output_n1[0];
+                    out_tm1[1] = output_n1[1];
+                    out_tm1[2] = output_n1[2];
+                    out_tm1[3] = output_n1[3];
+                    out_tm1[4] = output_n1[4];
+                    out_tm1[5] = output_n1[5];
 
-                    out_tm6[0] = output_n4[0];
-                    out_tm6[1] = output_n4[1];
-                    out_tm6[2] = output_n4[2];
-                    out_tm6[3] = output_n4[3];
-                    out_tm7[0] = output_n4[4];
-                    out_tm7[1] = output_n4[5];
-                    out_tm7[2] = output_n5[0];
-                    out_tm7[3] = output_n5[1];
-                    out_tm8[0] = output_n5[2];
-                    out_tm8[1] = output_n5[3];
-                    out_tm8[2] = output_n5[4];
-                    out_tm8[3] = output_n5[5];
+                    out_tm2[0] = output_n2[0];
+                    out_tm2[1] = output_n2[1];
+                    out_tm2[2] = output_n2[2];
+                    out_tm2[3] = output_n2[3];
+                    out_tm2[4] = output_n2[4];
+                    out_tm2[5] = output_n2[5];
+
+                    out_tm3[0] = output_n3[0];
+                    out_tm3[1] = output_n3[1];
+                    out_tm3[2] = output_n3[2];
+                    out_tm3[3] = output_n3[3];
+                    out_tm3[4] = output_n3[4];
+                    out_tm3[5] = output_n3[5];
+
+                    out_tm4[0] = output_n4[0];
+                    out_tm4[1] = output_n4[1];
+                    out_tm4[2] = output_n4[2];
+                    out_tm4[3] = output_n4[3];
+                    out_tm4[4] = output_n4[4];
+                    out_tm4[5] = output_n4[5];
+
+                    out_tm5[0] = output_n5[0];
+                    out_tm5[1] = output_n5[1];
+                    out_tm5[2] = output_n5[2];
+                    out_tm5[3] = output_n5[3];
+                    out_tm5[4] = output_n5[4];
+                    out_tm5[5] = output_n5[5];
 
                     r0 += 4;
                     r1 += 4;
@@ -1111,182 +996,163 @@ void conv3x3s1_winograd43_sse(
     float *top_blob_tm = new float[36 * tiles * outch];
     {
         #pragma omp parallel for num_threads(threads_num)
-        for (int r = 0; r < 9; r++)
+        for (int p = 0; p < outch; p++)
         {
-            int nn_outch = 0;
-            int remain_outch_start = 0;
+            float* output0_tm = top_blob_tm + p * tiles * 36 + 0;
+            float* output1_tm = top_blob_tm + p * tiles * 36 + 6;
+            float* output2_tm = top_blob_tm + p * tiles * 36 + 12;
+            float* output3_tm = top_blob_tm + p * tiles * 36 + 18;
+            float* output4_tm = top_blob_tm + p * tiles * 36 + 24;
+            float* output5_tm = top_blob_tm + p * tiles * 36 + 30;
 
-            nn_outch = outch >> 3;
-            remain_outch_start = nn_outch << 3;
+            const float* kptr = kernel_tm + p * inch * 36;
 
-            for (int pp = 0; pp < nn_outch; pp++)
+            for (int i = 0; i < tiles; i++)
             {
-                int p = pp * 8;
+                const float* r0 = bottom_blob_tm + i * inch * 36;
 
-                float* output0_tm = top_blob_tm + (p + 0) * tiles * 36;
-                float* output1_tm = top_blob_tm + (p + 1) * tiles * 36;
-                float* output2_tm = top_blob_tm + (p + 2) * tiles * 36;
-                float* output3_tm = top_blob_tm + (p + 3) * tiles * 36;
-                float* output4_tm = top_blob_tm + (p + 4) * tiles * 36;
-                float* output5_tm = top_blob_tm + (p + 5) * tiles * 36;
-                float* output6_tm = top_blob_tm + (p + 6) * tiles * 36;
-                float* output7_tm = top_blob_tm + (p + 7) * tiles * 36;
+                float zero_val = 0.f;
+                __m128 _sum0 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum1 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum2 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum3 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum4 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum5 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum6 = _mm_broadcast_ss(&zero_val);
+                __m128 _sum7 = _mm_broadcast_ss(&zero_val);
 
-                output0_tm = output0_tm + r * 4;
-                output1_tm = output1_tm + r * 4;
-                output2_tm = output2_tm + r * 4;
-                output3_tm = output3_tm + r * 4;
-                output4_tm = output4_tm + r * 4;
-                output5_tm = output5_tm + r * 4;
-                output6_tm = output6_tm + r * 4;
-                output7_tm = output7_tm + r * 4;
-
-                for (int i = 0; i < tiles; i++)
+                int q = 0;
+                for (; q + 3 < inch; q = q + 4)
                 {
-                    const float* kptr = kernel_tm2[r] + (p / 8) * inch * 32;
-                    const float* r0 = bottom_blob_tm + (tiles * r + i) * inch * 4;
+                    __m128 _r0 = _mm_loadu_ps(r0);
+                    __m128 _r1 = _mm_loadu_ps(r0 + 4);
+                    __m128 _r2 = _mm_loadu_ps(r0 + 8);
+                    __m128 _r3 = _mm_loadu_ps(r0 + 12);
 
-                    float zero_val = 0.f;
-                    __m128 _sum0 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum1 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum2 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum3 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum4 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum5 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum6 = _mm_broadcast_ss(&zero_val);
-                    __m128 _sum7 = _mm_broadcast_ss(&zero_val);
+                    __m128 _k0 = _mm_loadu_ps(kptr);
+                    __m128 _k1 = _mm_loadu_ps(kptr + 4);
+                    __m128 _k2 = _mm_loadu_ps(kptr + 8);
+                    __m128 _k3 = _mm_loadu_ps(kptr + 12);
+                    __m128 _k4 = _mm_loadu_ps(kptr + 16);
+                    __m128 _k5 = _mm_loadu_ps(kptr + 20);
+                    __m128 _k6 = _mm_loadu_ps(kptr + 24);
+                    __m128 _k7 = _mm_loadu_ps(kptr + 28);
 
-                    int q = 0;
-                    for (; q + 3 < inch; q = q + 4)
-                    {
-                        __m128 _r0 = _mm_loadu_ps(r0);
-                        __m128 _r1 = _mm_loadu_ps(r0 + 4);
-                        __m128 _r2 = _mm_loadu_ps(r0 + 8);
-                        __m128 _r3 = _mm_loadu_ps(r0 + 12);
+                    _sum0 = _mm_fmadd_ps(_r0, _k0, _sum0);
+                    _sum1 = _mm_fmadd_ps(_r0, _k1, _sum1);
+                    _sum2 = _mm_fmadd_ps(_r0, _k2, _sum2);
+                    _sum3 = _mm_fmadd_ps(_r0, _k3, _sum3);
+                    _sum4 = _mm_fmadd_ps(_r0, _k4, _sum4);
+                    _sum5 = _mm_fmadd_ps(_r0, _k5, _sum5);
+                    _sum6 = _mm_fmadd_ps(_r0, _k6, _sum6);
+                    _sum7 = _mm_fmadd_ps(_r0, _k7, _sum7);
 
-                        __m128 _k0 = _mm_loadu_ps(kptr);
-                        __m128 _k1 = _mm_loadu_ps(kptr + 4);
-                        __m128 _k2 = _mm_loadu_ps(kptr + 8);
-                        __m128 _k3 = _mm_loadu_ps(kptr + 12);
-                        __m128 _k4 = _mm_loadu_ps(kptr + 16);
-                        __m128 _k5 = _mm_loadu_ps(kptr + 20);
-                        __m128 _k6 = _mm_loadu_ps(kptr + 24);
-                        __m128 _k7 = _mm_loadu_ps(kptr + 28);
+                    kptr += 32;
+                    _k0 = _mm_loadu_ps(kptr);
+                    _k1 = _mm_loadu_ps(kptr + 4);
+                    _k2 = _mm_loadu_ps(kptr + 8);
+                    _k3 = _mm_loadu_ps(kptr + 12);
+                    _k4 = _mm_loadu_ps(kptr + 16);
+                    _k5 = _mm_loadu_ps(kptr + 20);
+                    _k6 = _mm_loadu_ps(kptr + 24);
+                    _k7 = _mm_loadu_ps(kptr + 28);
 
-                        _sum0 = _mm_fmadd_ps(_r0, _k0, _sum0);
-                        _sum1 = _mm_fmadd_ps(_r0, _k1, _sum1);
-                        _sum2 = _mm_fmadd_ps(_r0, _k2, _sum2);
-                        _sum3 = _mm_fmadd_ps(_r0, _k3, _sum3);
-                        _sum4 = _mm_fmadd_ps(_r0, _k4, _sum4);
-                        _sum5 = _mm_fmadd_ps(_r0, _k5, _sum5);
-                        _sum6 = _mm_fmadd_ps(_r0, _k6, _sum6);
-                        _sum7 = _mm_fmadd_ps(_r0, _k7, _sum7);
+                    _sum0 = _mm_fmadd_ps(_r1, _k0, _sum0);
+                    _sum1 = _mm_fmadd_ps(_r1, _k1, _sum1);
+                    _sum2 = _mm_fmadd_ps(_r1, _k2, _sum2);
+                    _sum3 = _mm_fmadd_ps(_r1, _k3, _sum3);
+                    _sum4 = _mm_fmadd_ps(_r1, _k4, _sum4);
+                    _sum5 = _mm_fmadd_ps(_r1, _k5, _sum5);
+                    _sum6 = _mm_fmadd_ps(_r1, _k6, _sum6);
+                    _sum7 = _mm_fmadd_ps(_r1, _k7, _sum7);
 
-                        kptr += 32;
-                        _k0 = _mm_loadu_ps(kptr);
-                        _k1 = _mm_loadu_ps(kptr + 4);
-                        _k2 = _mm_loadu_ps(kptr + 8);
-                        _k3 = _mm_loadu_ps(kptr + 12);
-                        _k4 = _mm_loadu_ps(kptr + 16);
-                        _k5 = _mm_loadu_ps(kptr + 20);
-                        _k6 = _mm_loadu_ps(kptr + 24);
-                        _k7 = _mm_loadu_ps(kptr + 28);
+                    kptr += 32;
+                    _k0 = _mm_loadu_ps(kptr);
+                    _k1 = _mm_loadu_ps(kptr + 4);
+                    _k2 = _mm_loadu_ps(kptr + 8);
+                    _k3 = _mm_loadu_ps(kptr + 12);
+                    _k4 = _mm_loadu_ps(kptr + 16);
+                    _k5 = _mm_loadu_ps(kptr + 20);
+                    _k6 = _mm_loadu_ps(kptr + 24);
+                    _k7 = _mm_loadu_ps(kptr + 28);
 
-                        _sum0 = _mm_fmadd_ps(_r1, _k0, _sum0);
-                        _sum1 = _mm_fmadd_ps(_r1, _k1, _sum1);
-                        _sum2 = _mm_fmadd_ps(_r1, _k2, _sum2);
-                        _sum3 = _mm_fmadd_ps(_r1, _k3, _sum3);
-                        _sum4 = _mm_fmadd_ps(_r1, _k4, _sum4);
-                        _sum5 = _mm_fmadd_ps(_r1, _k5, _sum5);
-                        _sum6 = _mm_fmadd_ps(_r1, _k6, _sum6);
-                        _sum7 = _mm_fmadd_ps(_r1, _k7, _sum7);
+                    _sum0 = _mm_fmadd_ps(_r2, _k0, _sum0);
+                    _sum1 = _mm_fmadd_ps(_r2, _k1, _sum1);
+                    _sum2 = _mm_fmadd_ps(_r2, _k2, _sum2);
+                    _sum3 = _mm_fmadd_ps(_r2, _k3, _sum3);
+                    _sum4 = _mm_fmadd_ps(_r2, _k4, _sum4);
+                    _sum5 = _mm_fmadd_ps(_r2, _k5, _sum5);
+                    _sum6 = _mm_fmadd_ps(_r2, _k6, _sum6);
+                    _sum7 = _mm_fmadd_ps(_r2, _k7, _sum7);
 
-                        kptr += 32;
-                        _k0 = _mm_loadu_ps(kptr);
-                        _k1 = _mm_loadu_ps(kptr + 4);
-                        _k2 = _mm_loadu_ps(kptr + 8);
-                        _k3 = _mm_loadu_ps(kptr + 12);
-                        _k4 = _mm_loadu_ps(kptr + 16);
-                        _k5 = _mm_loadu_ps(kptr + 20);
-                        _k6 = _mm_loadu_ps(kptr + 24);
-                        _k7 = _mm_loadu_ps(kptr + 28);
+                    kptr += 32;
+                    _k0 = _mm_loadu_ps(kptr);
+                    _k1 = _mm_loadu_ps(kptr + 4);
+                    _k2 = _mm_loadu_ps(kptr + 8);
+                    _k3 = _mm_loadu_ps(kptr + 12);
+                    _k4 = _mm_loadu_ps(kptr + 16);
+                    _k5 = _mm_loadu_ps(kptr + 20);
+                    _k6 = _mm_loadu_ps(kptr + 24);
+                    _k7 = _mm_loadu_ps(kptr + 28);
 
-                        _sum0 = _mm_fmadd_ps(_r2, _k0, _sum0);
-                        _sum1 = _mm_fmadd_ps(_r2, _k1, _sum1);
-                        _sum2 = _mm_fmadd_ps(_r2, _k2, _sum2);
-                        _sum3 = _mm_fmadd_ps(_r2, _k3, _sum3);
-                        _sum4 = _mm_fmadd_ps(_r2, _k4, _sum4);
-                        _sum5 = _mm_fmadd_ps(_r2, _k5, _sum5);
-                        _sum6 = _mm_fmadd_ps(_r2, _k6, _sum6);
-                        _sum7 = _mm_fmadd_ps(_r2, _k7, _sum7);
+                    _sum0 = _mm_fmadd_ps(_r3, _k0, _sum0);
+                    _sum1 = _mm_fmadd_ps(_r3, _k1, _sum1);
+                    _sum2 = _mm_fmadd_ps(_r3, _k2, _sum2);
+                    _sum3 = _mm_fmadd_ps(_r3, _k3, _sum3);
+                    _sum4 = _mm_fmadd_ps(_r3, _k4, _sum4);
+                    _sum5 = _mm_fmadd_ps(_r3, _k5, _sum5);
+                    _sum6 = _mm_fmadd_ps(_r3, _k6, _sum6);
+                    _sum7 = _mm_fmadd_ps(_r3, _k7, _sum7);
 
-                        kptr += 32;
-                        _k0 = _mm_loadu_ps(kptr);
-                        _k1 = _mm_loadu_ps(kptr + 4);
-                        _k2 = _mm_loadu_ps(kptr + 8);
-                        _k3 = _mm_loadu_ps(kptr + 12);
-                        _k4 = _mm_loadu_ps(kptr + 16);
-                        _k5 = _mm_loadu_ps(kptr + 20);
-                        _k6 = _mm_loadu_ps(kptr + 24);
-                        _k7 = _mm_loadu_ps(kptr + 28);
-
-                        _sum0 = _mm_fmadd_ps(_r3, _k0, _sum0);
-                        _sum1 = _mm_fmadd_ps(_r3, _k1, _sum1);
-                        _sum2 = _mm_fmadd_ps(_r3, _k2, _sum2);
-                        _sum3 = _mm_fmadd_ps(_r3, _k3, _sum3);
-                        _sum4 = _mm_fmadd_ps(_r3, _k4, _sum4);
-                        _sum5 = _mm_fmadd_ps(_r3, _k5, _sum5);
-                        _sum6 = _mm_fmadd_ps(_r3, _k6, _sum6);
-                        _sum7 = _mm_fmadd_ps(_r3, _k7, _sum7);
-
-                        kptr += 32;
-                        r0 += 16;
-                    }
-
-                    for (; q < inch; q++)
-                    {
-                        __m128 _r0 = _mm_loadu_ps(r0);
-                        __m128 _k0 = _mm_loadu_ps(kptr);
-                        __m128 _k1 = _mm_loadu_ps(kptr + 4);
-                        __m128 _k2 = _mm_loadu_ps(kptr + 8);
-                        __m128 _k3 = _mm_loadu_ps(kptr + 12);
-                        __m128 _k4 = _mm_loadu_ps(kptr + 16);
-                        __m128 _k5 = _mm_loadu_ps(kptr + 20);
-                        __m128 _k6 = _mm_loadu_ps(kptr + 24);
-                        __m128 _k7 = _mm_loadu_ps(kptr + 28);
-
-                        _sum0 = _mm_fmadd_ps(_r0, _k0, _sum0);
-                        _sum1 = _mm_fmadd_ps(_r0, _k1, _sum1);
-                        _sum2 = _mm_fmadd_ps(_r0, _k2, _sum2);
-                        _sum3 = _mm_fmadd_ps(_r0, _k3, _sum3);
-                        _sum4 = _mm_fmadd_ps(_r0, _k4, _sum4);
-                        _sum5 = _mm_fmadd_ps(_r0, _k5, _sum5);
-                        _sum6 = _mm_fmadd_ps(_r0, _k6, _sum6);
-                        _sum7 = _mm_fmadd_ps(_r0, _k7, _sum7);
-
-                        kptr += 32;
-                        r0 += 4;
-                    }
-
-                    _mm_storeu_ps(output0_tm, _sum0);
-                    _mm_storeu_ps(output1_tm, _sum1);
-                    _mm_storeu_ps(output2_tm, _sum2);
-                    _mm_storeu_ps(output3_tm, _sum3);
-                    _mm_storeu_ps(output4_tm, _sum4);
-                    _mm_storeu_ps(output5_tm, _sum5);
-                    _mm_storeu_ps(output6_tm, _sum6);
-                    _mm_storeu_ps(output7_tm, _sum7);
-
-                    output0_tm += 36;
-                    output1_tm += 36;
-                    output2_tm += 36;
-                    output3_tm += 36;
-                    output4_tm += 36;
-                    output5_tm += 36;
-                    output6_tm += 36;
-                    output7_tm += 36;
+                    kptr += 32;
+                    r0 += 16;
                 }
+
+                for (; q < inch; q++)
+                {
+                    __m128 _r0 = _mm_loadu_ps(r0);
+                    __m128 _k0 = _mm_loadu_ps(kptr);
+                    __m128 _k1 = _mm_loadu_ps(kptr + 4);
+                    __m128 _k2 = _mm_loadu_ps(kptr + 8);
+                    __m128 _k3 = _mm_loadu_ps(kptr + 12);
+                    __m128 _k4 = _mm_loadu_ps(kptr + 16);
+                    __m128 _k5 = _mm_loadu_ps(kptr + 20);
+                    __m128 _k6 = _mm_loadu_ps(kptr + 24);
+                    __m128 _k7 = _mm_loadu_ps(kptr + 28);
+
+                    _sum0 = _mm_fmadd_ps(_r0, _k0, _sum0);
+                    _sum1 = _mm_fmadd_ps(_r0, _k1, _sum1);
+                    _sum2 = _mm_fmadd_ps(_r0, _k2, _sum2);
+                    _sum3 = _mm_fmadd_ps(_r0, _k3, _sum3);
+                    _sum4 = _mm_fmadd_ps(_r0, _k4, _sum4);
+                    _sum5 = _mm_fmadd_ps(_r0, _k5, _sum5);
+                    _sum6 = _mm_fmadd_ps(_r0, _k6, _sum6);
+                    _sum7 = _mm_fmadd_ps(_r0, _k7, _sum7);
+
+                    kptr += 32;
+                    r0 += 4;
+                }
+
+                _mm_storeu_ps(output0_tm, _sum0);
+                _mm_storeu_ps(output1_tm, _sum1);
+                _mm_storeu_ps(output2_tm, _sum2);
+                _mm_storeu_ps(output3_tm, _sum3);
+                _mm_storeu_ps(output4_tm, _sum4);
+                _mm_storeu_ps(output5_tm, _sum5);
+                _mm_storeu_ps(output6_tm, _sum6);
+                _mm_storeu_ps(output7_tm, _sum7);
+
+                output0_tm += 36;
+                output1_tm += 36;
+                output2_tm += 36;
+                output3_tm += 36;
+                output4_tm += 36;
+                output5_tm += 36;
+                output6_tm += 36;
+                output7_tm += 36;
             }
+        }
+    }
 
             nn_outch = (outch - remain_outch_start) >> 2;
 

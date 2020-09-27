@@ -19,8 +19,8 @@ setup(
             sources,
             include_dirs=['..'],
             library_dirs=['../build'],
-            libraries=['boa'],
-        )
+            libraries=['boa']
+        ),
     ],
     cmdclass={'build_ext': BuildExtension},
 )
